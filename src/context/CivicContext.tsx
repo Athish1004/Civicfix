@@ -62,7 +62,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [complaints, setComplaints] = useState<Complaint[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_COMPLAINTS);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (e) {
       console.warn('Failed to load stored complaints, using initial seed:', e);
     }
@@ -72,7 +75,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [duplicateSuggestions, setDuplicateSuggestions] = useState<DuplicateSuggestion[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_DUPLICATES);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (e) {
       console.warn('Failed to load stored duplicates, using initial seed:', e);
     }

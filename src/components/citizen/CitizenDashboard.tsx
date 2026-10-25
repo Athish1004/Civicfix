@@ -29,9 +29,12 @@ export const CitizenDashboard: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [viewScope, setViewScope] = useState<'mine' | 'all' | 'analytics'>('mine');
 
+  const safeComplaints = Array.isArray(complaints) ? complaints : [];
+
   // Filter complaints based on scope, search, category, status
   const filteredComplaints = useMemo(() => {
-    return complaints.filter((c) => {
+    return safeComplaints.filter((c) => {
+      if (!c) return false;
       // Scope filter: my complaints vs all complaints
       if (viewScope === 'mine' && c.reporterId !== currentUser?.id) {
         return false;
@@ -50,10 +53,10 @@ export const CitizenDashboard: React.FC = () => {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesId = c.id.toLowerCase().includes(q);
-        const matchesTitle = c.title.toLowerCase().includes(q);
-        const matchesDesc = c.description.toLowerCase().includes(q);
-        const matchesAddress = c.address.toLowerCase().includes(q);
+        const matchesId = (c.id || '').toLowerCase().includes(q);
+        const matchesTitle = (c.title || '').toLowerCase().includes(q);
+        const matchesDesc = (c.description || '').toLowerCase().includes(q);
+        const matchesAddress = (c.address || '').toLowerCase().includes(q);
         if (!matchesId && !matchesTitle && !matchesDesc && !matchesAddress) {
           return false;
         }
@@ -61,14 +64,14 @@ export const CitizenDashboard: React.FC = () => {
 
       return true;
     });
-  }, [complaints, currentUser?.id, viewScope, selectedCategory, selectedStatus, searchQuery]);
+  }, [safeComplaints, currentUser?.id, viewScope, selectedCategory, selectedStatus, searchQuery]);
 
   // User personal counters
-  const myComplaints = complaints.filter((c) => c.reporterId === currentUser?.id);
+  const myComplaints = safeComplaints.filter((c) => c && c.reporterId === currentUser?.id);
   const totalReports = myComplaints.length;
-  const openReports = myComplaints.filter((c) => c.status === 'reported' || c.status === 'triaged').length;
-  const inProgressReports = myComplaints.filter((c) => c.status === 'in_progress' || c.status === 'scheduled').length;
-  const resolvedReports = myComplaints.filter((c) => c.status === 'resolved' || c.status === 'closed').length;
+  const openReports = myComplaints.filter((c) => c && (c.status === 'reported' || c.status === 'triaged')).length;
+  const inProgressReports = myComplaints.filter((c) => c && (c.status === 'in_progress' || c.status === 'scheduled')).length;
+  const resolvedReports = myComplaints.filter((c) => c && (c.status === 'resolved' || c.status === 'closed')).length;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">

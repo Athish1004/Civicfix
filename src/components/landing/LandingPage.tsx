@@ -64,40 +64,34 @@ export const LandingPage: React.FC = () => {
 
           {/* Primary Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <button
-              onClick={() => {
-                if (currentUser && currentUser.role === 'citizen') {
-                  setActiveTab('citizen-dashboard');
-                } else {
-                  openLoginModal('citizen');
-                }
-              }}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/20 hover:shadow-teal-400/30 flex items-center justify-center gap-2"
-            >
-              <User className="w-4 h-4 text-slate-950" />
-              <span>Citizen Portal</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => {
-                if (currentUser && currentUser.role === 'administrator') {
-                  setActiveTab('admin-dashboard');
-                } else {
-                  openLoginModal('administrator');
-                }
-              }}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-400/40 transition-all flex items-center justify-center gap-2 shadow-md"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Admin Portal (Command)</span>
-            </button>
+            {currentUser?.role === 'citizen' && (
+              <button
+                onClick={() => setActiveTab('citizen-dashboard')}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/20 hover:shadow-teal-400/30 flex items-center justify-center gap-2"
+              >
+                <User className="w-4 h-4 text-slate-950" />
+                <span>My Citizen Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('report-issue')}
-              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm border border-white/20 transition-all flex items-center justify-center gap-2"
+              className={`w-full sm:w-auto px-6 py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                currentUser?.role === 'administrator'
+                  ? 'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-lg shadow-teal-500/20 hover:shadow-teal-400/30'
+                  : 'bg-white/10 hover:bg-white/15 text-white border border-white/20'
+              }`}
             >
               <span>+ Report an Issue</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('live-map')}
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm border border-white/20 transition-all flex items-center justify-center gap-2"
+            >
+              <MapPin className="w-4 h-4 text-teal-400" />
+              <span>Live Civic Map</span>
             </button>
           </div>
 

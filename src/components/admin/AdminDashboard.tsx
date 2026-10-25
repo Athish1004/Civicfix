@@ -79,11 +79,14 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // Calculations
-  const total = complaints.length;
-  const unresolved = complaints.filter((c) => c.status !== 'resolved' && c.status !== 'closed').length;
-  const criticalAndHigh = complaints.filter((c) => c.confirmedPriority === 'high' || c.confirmedPriority === 'critical').length;
-  const resolved = complaints.filter((c) => c.status === 'resolved' || c.status === 'closed').length;
-  const pendingDuplicates = duplicateSuggestions.filter((d) => d.reviewStatus === 'pending');
+  const safeComplaints = Array.isArray(complaints) ? complaints : [];
+  const safeDuplicates = Array.isArray(duplicateSuggestions) ? duplicateSuggestions : [];
+
+  const total = safeComplaints.length;
+  const unresolved = safeComplaints.filter((c) => c && c.status !== 'resolved' && c.status !== 'closed').length;
+  const criticalAndHigh = safeComplaints.filter((c) => c && (c.confirmedPriority === 'high' || c.confirmedPriority === 'critical')).length;
+  const resolved = safeComplaints.filter((c) => c && (c.status === 'resolved' || c.status === 'closed')).length;
+  const pendingDuplicates = safeDuplicates.filter((d) => d && d.reviewStatus === 'pending');
 
   // Category distribution for analytics
   const categoryCounts: Record<ComplaintCategory, number> = {
@@ -95,23 +98,26 @@ export const AdminDashboard: React.FC = () => {
     public_infrastructure: 0,
     other: 0,
   };
-  complaints.forEach((c) => {
-    categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+  safeComplaints.forEach((c) => {
+    if (c && c.category && categoryCounts[c.category] !== undefined) {
+      categoryCounts[c.category] = (categoryCounts[c.category] || 0) + 1;
+    }
   });
 
   // Status distribution
   const statusCounts = {
-    reported: complaints.filter((c) => c.status === 'reported').length,
-    triaged: complaints.filter((c) => c.status === 'triaged').length,
-    in_progress: complaints.filter((c) => c.status === 'in_progress').length,
-    scheduled: complaints.filter((c) => c.status === 'scheduled').length,
-    resolved: complaints.filter((c) => c.status === 'resolved').length,
-    closed: complaints.filter((c) => c.status === 'closed').length,
+    reported: safeComplaints.filter((c) => c && c.status === 'reported').length,
+    triaged: safeComplaints.filter((c) => c && c.status === 'triaged').length,
+    in_progress: safeComplaints.filter((c) => c && c.status === 'in_progress').length,
+    scheduled: safeComplaints.filter((c) => c && c.status === 'scheduled').length,
+    resolved: safeComplaints.filter((c) => c && c.status === 'resolved').length,
+    closed: safeComplaints.filter((c) => c && c.status === 'closed').length,
   };
 
   // Filtered & sorted complaints
   const filteredComplaints = useMemo(() => {
-    let result = complaints.filter((c) => {
+    let result = safeComplaints.filter((c) => {
+      if (!c) return false;
       if (categoryFilter !== 'all' && c.category !== categoryFilter) return false;
       if (priorityFilter !== 'all' && c.confirmedPriority !== priorityFilter) return false;
       if (statusFilter !== 'all' && c.status !== statusFilter) return false;

@@ -26,8 +26,8 @@ export const Sidebar: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
-    complaints,
-    duplicateSuggestions,
+    complaints = [],
+    duplicateSuggestions = [],
     sidebarOpen,
     setSidebarOpen,
     toggleSidebar,
@@ -35,11 +35,14 @@ export const Sidebar: React.FC = () => {
     setIsProfileModalOpen,
   } = useCivic();
 
-  const pendingDuplicates = duplicateSuggestions.filter((d) => d.reviewStatus === 'pending').length;
-  const criticalCount = complaints.filter(
-    (c) => c.confirmedPriority === 'critical' && c.status !== 'resolved' && c.status !== 'closed'
+  const safeComplaints = Array.isArray(complaints) ? complaints : [];
+  const safeDuplicates = Array.isArray(duplicateSuggestions) ? duplicateSuggestions : [];
+
+  const pendingDuplicates = safeDuplicates.filter((d) => d && d.reviewStatus === 'pending').length;
+  const criticalCount = safeComplaints.filter(
+    (c) => c && c.confirmedPriority === 'critical' && c.status !== 'resolved' && c.status !== 'closed'
   ).length;
-  const inProgressCount = complaints.filter((c) => c.status === 'in_progress').length;
+  const inProgressCount = safeComplaints.filter((c) => c && c.status === 'in_progress').length;
 
   const isAdmin = currentUser?.role === 'administrator';
 
@@ -55,14 +58,6 @@ export const Sidebar: React.FC = () => {
       badge: 'New',
       badgeColor: 'bg-amber-500 text-slate-950',
     },
-    {
-      id: 'admin-dashboard',
-      label: 'Municipal Command',
-      icon: Lock,
-      isRestricted: true,
-      badge: 'Admin Only',
-      badgeColor: 'bg-slate-200 text-slate-600',
-    },
   ];
 
   const adminLinks = [
@@ -73,7 +68,6 @@ export const Sidebar: React.FC = () => {
       icon: ShieldCheck,
       badge: pendingDuplicates > 0 ? `${pendingDuplicates} dups` : undefined,
     },
-    { id: 'citizen-dashboard', label: 'Citizen View & Reports', icon: LayoutDashboard },
     { id: 'report-issue', label: 'Report New Issue', icon: PlusCircle, isAccent: true },
     { id: 'live-map', label: 'Live Civic Map', icon: MapPin },
     { id: 'ai-panel', label: 'AI Triage Inspector', icon: Cpu },
@@ -88,17 +82,23 @@ export const Sidebar: React.FC = () => {
 
   const handleLinkClick = (id: string, isRestricted?: boolean) => {
     if (isRestricted) {
-      alert('🔒 Access Restricted: Municipal Command is reserved for City Administrators and Public Works Officers. Please log out and log in through the Administrator Portal.');
+      alert('🔒 Access Restricted: Municipal Command is reserved for City Administrators and Public Works Officers.');
       return;
     }
     setActiveTab(id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
+    try {
+      if (typeof window !== 'undefined' && window.scrollTo) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (e) {}
+    try {
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      }
+    } catch (e) {}
   };
 
-  // If sidebar is hidden, render nothing or 0-width
+  // If sidebar is hidden, render nothing
   if (!sidebarOpen) {
     return null;
   }
@@ -213,19 +213,19 @@ export const Sidebar: React.FC = () => {
                     isAdmin ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-400/30' : 'bg-[#10243A] text-teal-300 ring-2 ring-teal-500/30'
                   }`}
                 >
-                  {(currentUser.name || 'U')
+                  {(typeof currentUser?.name === 'string' && currentUser.name.trim() ? currentUser.name : 'User')
                     .split(' ')
                     .filter(Boolean)
-                    .map((n) => n[0])
+                    .map((n) => n[0] || '')
                     .slice(0, 2)
                     .join('')
-                    .toUpperCase()}
+                    .toUpperCase() || 'U'}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-900 text-xs truncate group-hover:text-teal-700 transition-colors">
-                    {currentUser.name}
+                    {currentUser?.name || 'Authorized User'}
                   </div>
-                  <div className="text-[10px] text-slate-500 truncate">{currentUser.email}</div>
+                  <div className="text-[10px] text-slate-500 truncate">{currentUser?.email || 'user@civicnet.org'}</div>
                   <div className="text-[10px] font-semibold text-teal-700 capitalize mt-0.5">
                     {isAdmin ? 'Municipal Administrator' : 'Resident Citizen'}
                   </div>

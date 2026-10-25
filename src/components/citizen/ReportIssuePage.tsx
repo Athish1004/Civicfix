@@ -52,7 +52,7 @@ const PRESET_PHOTOS = [
 ];
 
 export const ReportIssuePage: React.FC = () => {
-  const { addComplaint, complaints, viewComplaint, setActiveTab } = useCivic();
+  const { addComplaint, complaints, viewComplaint, setActiveTab, currentUser } = useCivic();
 
   // Form state
   const [title, setTitle] = useState('');
@@ -263,11 +263,11 @@ export const ReportIssuePage: React.FC = () => {
                   setImagePreview('');
                   setImageUrl('');
                   setAiAnalysis(null);
-                  setActiveTab('citizen-dashboard');
+                  setActiveTab(currentUser?.role === 'administrator' ? 'admin-dashboard' : 'citizen-dashboard');
                 }}
                 className="py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors"
               >
-                Go to Dashboard
+                Go to {currentUser?.role === 'administrator' ? 'Municipal Command' : 'Dashboard'}
               </button>
             </div>
           </div>
@@ -277,14 +277,24 @@ export const ReportIssuePage: React.FC = () => {
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-teal-600 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-200">
-            Citizen Action
+          <span
+            className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
+              currentUser?.role === 'administrator'
+                ? 'text-amber-800 bg-amber-50 border-amber-300'
+                : 'text-teal-600 bg-teal-50 border-teal-200'
+            }`}
+          >
+            {currentUser?.role === 'administrator' ? 'Municipal Officer Log' : 'Citizen Action'}
           </span>
-          <span className="text-xs text-slate-400">• Step 1 of 3</span>
+          <span className="text-xs text-slate-400">• Direct Incident Registry</span>
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1">Report a Civic Problem</h1>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-1">
+          {currentUser?.role === 'administrator' ? 'Log Official Municipal Problem' : 'Report a Civic Problem'}
+        </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Submit potholes, overflowing refuse, water pipe ruptures, or street outages. AI assists with hazard priority and municipal dispatch.
+          {currentUser?.role === 'administrator'
+            ? 'Municipal Officers and Public Works Supervisors can directly register infrastructure hazards and road emergencies.'
+            : 'Submit potholes, overflowing refuse, water pipe ruptures, or street outages. AI assists with hazard priority and municipal dispatch.'}
         </p>
       </div>
 

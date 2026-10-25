@@ -18,6 +18,7 @@ import { CivicKarmaView } from './components/gamification/CivicKarmaView';
 import { LoginPortal } from './components/auth/LoginPortal';
 import { LoginModal } from './components/auth/LoginModal';
 import { ProfileModal } from './components/profile/ProfileModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { PanelLeftOpen } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -69,7 +70,11 @@ const AppContent: React.FC = () => {
 
       <div className="flex-1 flex relative">
         {/* Left Dashboard Navigation (Active only when logged in) */}
-        {currentUser && <Sidebar />}
+        {currentUser && (
+          <ErrorBoundary fallbackTitle="Dashboard Navigation">
+            <Sidebar />
+          </ErrorBoundary>
+        )}
 
         {/* Floating Re-Open Sidebar pill when user chose to hide it */}
         {currentUser && !sidebarOpen && (
@@ -84,7 +89,9 @@ const AppContent: React.FC = () => {
         )}
 
         <main className="flex-1 min-w-0 overflow-x-hidden">
-          {renderActiveView()}
+          <ErrorBoundary fallbackTitle="View Rendering Error">
+            {renderActiveView()}
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -97,8 +104,10 @@ const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <CivicProvider>
-      <AppContent />
-    </CivicProvider>
+    <ErrorBoundary fallbackTitle="Application Error">
+      <CivicProvider>
+        <AppContent />
+      </CivicProvider>
+    </ErrorBoundary>
   );
 }

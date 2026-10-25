@@ -18,7 +18,7 @@ import {
 import { CategoryBadge, PriorityBadge, StatusBadge } from '../common/Badge';
 
 export const LiveCivicMap: React.FC = () => {
-  const { complaints, viewComplaint } = useCivic();
+  const { complaints, viewComplaint, sidebarOpen } = useCivic();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -34,20 +34,36 @@ export const LiveCivicMap: React.FC = () => {
   const [hoveredPinComplaint, setHoveredPinComplaint] = useState<Complaint | null>(null);
 
   // Filter complaints
-  const filteredComplaints = complaints.filter((c) => {
+  const safeComplaints = Array.isArray(complaints) ? complaints : [];
+  const filteredComplaints = safeComplaints.filter((c) => {
+    if (!c) return false;
     if (selectedCategory !== 'all' && c.category !== selectedCategory) return false;
     if (selectedStatus !== 'all' && c.status !== selectedStatus) return false;
     if (selectedPriority !== 'all' && c.confirmedPriority !== selectedPriority) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        c.title.toLowerCase().includes(q) ||
-        c.address.toLowerCase().includes(q) ||
-        c.id.toLowerCase().includes(q)
+        (c.title || '').toLowerCase().includes(q) ||
+        (c.address || '').toLowerCase().includes(q) ||
+        (c.id || '').toLowerCase().includes(q)
       );
     }
     return true;
   });
+
+  // Invalidate map size when Dashboard Nav opens or closes
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      const timer = setTimeout(() => {
+        try {
+          mapInstanceRef.current?.invalidateSize();
+        } catch (e) {
+          // ignore
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [sidebarOpen]);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -55,6 +71,11 @@ export const LiveCivicMap: React.FC = () => {
 
     try {
       if (!mapInstanceRef.current) {
+        // Clear any dangling leaflet id to avoid initialization crash
+        if ((mapContainerRef.current as any)._leaflet_id) {
+          (mapContainerRef.current as any)._leaflet_id = null;
+        }
+
         // Center around Civic Center (37.7758, -122.4182)
         const map = L.map(mapContainerRef.current, {
           center: [37.7758, -122.4182],
@@ -79,7 +100,9 @@ export const LiveCivicMap: React.FC = () => {
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {}
         mapInstanceRef.current = null;
       }
     };
