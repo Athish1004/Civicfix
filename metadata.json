@@ -1,0 +1,6 @@
+{
+  "name": "CivicFix Intelligence",
+  "description": "AI-powered civic problem reporting, intelligent classification, duplicate detection, and municipal management platform.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
