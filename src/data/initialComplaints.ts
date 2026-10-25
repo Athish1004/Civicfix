@@ -6,7 +6,9 @@ export const DEMO_USERS: UserProfile[] = [
     name: 'Jane Doe',
     email: 'jane.doe@civicnet.org',
     role: 'citizen',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    neighborhood: 'Ward 4 - Downtown Civic Center',
+    phone: '+1 (555) 019-2834',
+    bio: 'Active resident reporting neighborhood infrastructure hazards.',
   },
   {
     id: 'user-admin-01',
@@ -14,7 +16,8 @@ export const DEMO_USERS: UserProfile[] = [
     email: 'marcus.vance@cityworks.gov',
     role: 'administrator',
     department: 'Municipal Operations & Dispatch',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    phone: '+1 (555) 014-9921',
+    bio: 'Public Works Operations Supervisor handling dispatch and marking resolved issues.',
   },
 ];
 

@@ -6,8 +6,12 @@ import { checkAiHealth, HealthStatus } from '../services/aiService';
 interface CivicContextType {
   complaints: Complaint[];
   duplicateSuggestions: DuplicateSuggestion[];
-  currentUser: UserProfile;
-  setCurrentUser: (user: UserProfile) => void;
+  currentUser: UserProfile | null;
+  setCurrentUser: (user: UserProfile | null) => void;
+  isLoggedIn: boolean;
+  login: (user: UserProfile) => void;
+  logout: () => void;
+  updateProfile: (updatedData: Partial<UserProfile>) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   selectedComplaintId: string | null;
@@ -31,6 +35,7 @@ interface CivicContextType {
     note: string,
     confirmedPriority?: ComplaintPriority
   ) => void;
+  markComplaintResolved: (id: string, resolutionNote?: string) => void;
   addCitizenNote: (complaintId: string, noteText: string) => void;
   resolveDuplicate: (duplicateId: string, action: 'confirm_merge' | 'reject') => void;
   resetDemoData: () => void;
@@ -39,6 +44,12 @@ interface CivicContextType {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebar: () => void;
+  isLoginModalOpen: boolean;
+  loginModalDefaultRole: 'citizen' | 'administrator';
+  openLoginModal: (role?: 'citizen' | 'administrator') => void;
+  closeLoginModal: () => void;
+  isProfileModalOpen: boolean;
+  setIsProfileModalOpen: (open: boolean) => void;
 }
 
 const STORAGE_KEY_COMPLAINTS = 'civicfix_complaints_v1';
@@ -68,21 +79,92 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return INITIAL_DUPLICATE_SUGGESTIONS;
   });
 
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_USER);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const match = DEMO_USERS.find((u) => u.id === parsed.id);
-        if (match) return match;
+        if (parsed && parsed.id) return parsed;
       }
     } catch (e) {}
-    return DEMO_USERS[0]; // Jane Doe (Citizen)
+    return null; // Default to logged out as requested
   });
 
-  const [activeTab, setActiveTab] = useState<string>('landing');
+  const [activeTab, setActiveTabState] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_USER);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.role === 'administrator') return 'admin-dashboard';
+        if (parsed?.role === 'citizen') return 'citizen-dashboard';
+      }
+    } catch (e) {}
+    return 'login'; // Default to login screen asking user to choose portal
+  });
+
+  const setActiveTab = (tab: string) => {
+    // If not logged in, only allow login or landing
+    if (!currentUser && tab !== 'login' && tab !== 'landing') {
+      setActiveTabState('login');
+      return;
+    }
+
+    // Role-locked portal access:
+    // Citizens cannot switch to or view Municipal Administrator command
+    if (currentUser?.role === 'citizen' && (tab === 'admin-dashboard' || tab === 'ai-panel')) {
+      alert('Access Restricted: You are logged into the Citizen Portal. To access Municipal Command, please log out and choose the Administrator Portal.');
+      return;
+    }
+
+    setActiveTabState(tab);
+  };
+
   const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+
+  // Login & Profile Modal states
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginModalDefaultRole, setLoginModalDefaultRole] = useState<'citizen' | 'administrator'>('citizen');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  const openLoginModal = (role: 'citizen' | 'administrator' = 'citizen') => {
+    setLoginModalDefaultRole(role);
+    setIsLoginModalOpen(true);
+  };
+
+  const closeLoginModal = () => {
+    setIsLoginModalOpen(false);
+  };
+
+  const login = (user: UserProfile) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+    } catch (e) {}
+    if (user.role === 'administrator') {
+      setActiveTabState('admin-dashboard');
+    } else {
+      setActiveTabState('citizen-dashboard');
+    }
+    setIsLoginModalOpen(false);
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY_USER);
+    } catch (e) {}
+    setActiveTabState('login');
+  };
+
+  const updateProfile = (updatedData: Partial<UserProfile>) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...updatedData };
+    setCurrentUser(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updated));
+    } catch (e) {}
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen((prev) => !prev);
@@ -157,9 +239,9 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       status: 'reported',
       suggestedPriority: data.suggestedPriority,
       confirmedPriority: data.confirmedPriority,
-      reporterId: currentUser.id,
-      reporterName: currentUser.name,
-      reporterEmail: currentUser.email,
+      reporterId: currentUser?.id || 'guest-citizen',
+      reporterName: currentUser?.name || 'Resident Citizen',
+      reporterEmail: currentUser?.email || 'citizen@civicnet.org',
       createdAt: now,
       updatedAt: now,
       aiAnalysis: data.aiAnalysis,
@@ -167,8 +249,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         {
           id: `up-${Date.now()}-1`,
           timestamp: now,
-          actorName: currentUser.name,
-          actorRole: currentUser.role,
+          actorName: currentUser?.name || 'Resident Citizen',
+          actorRole: currentUser?.role || 'citizen',
           newStatus: 'reported',
           note: 'New complaint officially registered on public ledger.',
         },
@@ -231,8 +313,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const updateEntry = {
           id: `up-${Date.now()}`,
           timestamp: now,
-          actorName: currentUser.name,
-          actorRole: currentUser.role,
+          actorName: currentUser?.name || 'Municipal Officer',
+          actorRole: currentUser?.role || 'administrator',
           previousStatus: c.status,
           newStatus,
           note: note.trim() || `Status updated from ${c.status} to ${newStatus}.`,
@@ -249,6 +331,34 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
+  // Dedicated Admin action to mark an issue as solved/completed
+  const markComplaintResolved = (id: string, resolutionNote?: string) => {
+    setComplaints((prev) =>
+      prev.map((c) => {
+        if (c.id !== id) return c;
+        const now = new Date().toISOString();
+        const updateEntry = {
+          id: `up-${Date.now()}`,
+          timestamp: now,
+          actorName: currentUser?.name || 'Officer Marcus Vance',
+          actorRole: 'administrator' as const,
+          previousStatus: c.status,
+          newStatus: 'resolved' as const,
+          note:
+            resolutionNote?.trim() ||
+            'Municipal field verification complete: issue officially repaired and marked solved on civic ledger.',
+        };
+
+        return {
+          ...c,
+          status: 'resolved' as const,
+          updatedAt: now,
+          updates: [updateEntry, ...c.updates],
+        };
+      })
+    );
+  };
+
   const addCitizenNote = (complaintId: string, noteText: string) => {
     if (!noteText.trim()) return;
     setComplaints((prev) =>
@@ -257,8 +367,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const noteEntry = {
           id: `cn-${Date.now()}`,
           timestamp: new Date().toISOString(),
-          authorName: currentUser.name,
-          authorEmail: currentUser.email,
+          authorName: currentUser?.name || 'Concerned Citizen',
+          authorEmail: currentUser?.email || 'citizen@civicnet.org',
           note: noteText.trim(),
         };
         return {
@@ -278,7 +388,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ...d,
           reviewStatus: action === 'confirm_merge' ? 'confirmed_duplicate' : 'rejected',
           reviewedAt: new Date().toISOString(),
-          reviewedBy: currentUser.name,
+          reviewedBy: currentUser?.name || 'Administrator',
         };
       })
     );
@@ -297,8 +407,8 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                   {
                     id: `up-${Date.now()}`,
                     timestamp: new Date().toISOString(),
-                    actorName: currentUser.name,
-                    actorRole: currentUser.role,
+                    actorName: currentUser?.name || 'Administrator',
+                    actorRole: currentUser?.role || 'administrator',
                     previousStatus: c.status,
                     newStatus: 'closed',
                     note: `Merged as duplicate into master ticket #${item.matchedComplaintId}. (${item.reason})`,
@@ -335,6 +445,10 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         duplicateSuggestions,
         currentUser,
         setCurrentUser,
+        isLoggedIn: Boolean(currentUser),
+        login,
+        logout,
+        updateProfile,
         activeTab,
         setActiveTab,
         selectedComplaintId,
@@ -342,6 +456,7 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         viewComplaint,
         addComplaint,
         updateComplaintStatus,
+        markComplaintResolved,
         addCitizenNote,
         resolveDuplicate,
         resetDemoData,
@@ -350,6 +465,12 @@ export const CivicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         sidebarOpen,
         setSidebarOpen,
         toggleSidebar,
+        isLoginModalOpen,
+        loginModalDefaultRole,
+        openLoginModal,
+        closeLoginModal,
+        isProfileModalOpen,
+        setIsProfileModalOpen,
       }}
     >
       {children}

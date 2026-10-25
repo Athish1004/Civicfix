@@ -21,11 +21,12 @@ import {
   Clock,
   ChevronRight,
 } from 'lucide-react';
+import { User, Lock } from 'lucide-react';
 import { CategoryBadge, StatusBadge, PriorityBadge } from '../common/Badge';
 import { BeforeAfterSlider } from '../common/BeforeAfterSlider';
 
 export const LandingPage: React.FC = () => {
-  const { setActiveTab, complaints, viewComplaint, aiStatus } = useCivic();
+  const { setActiveTab, complaints, viewComplaint, aiStatus, currentUser, openLoginModal } = useCivic();
 
   const resolvedCount = complaints.filter((c) => c.status === 'resolved' || c.status === 'closed').length;
   const inProgressCount = complaints.filter((c) => c.status === 'in_progress' || c.status === 'scheduled').length;
@@ -56,34 +57,47 @@ export const LandingPage: React.FC = () => {
           </h1>
 
           <p className="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
-            CivicFix harnesses intelligent AI classification, explainable hazard scoring, and automated
-            duplicate detection to connect citizen reports directly with municipal field crews.
+            CivicFix connects citizen hazard reports with municipal public works crews.
+            Equipped with two purpose-built portals for <strong className="text-teal-300">Residents</strong> and{' '}
+            <strong className="text-amber-300">City Administrators</strong>.
           </p>
 
           {/* Primary Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <button
-              onClick={() => setActiveTab('report-issue')}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/20 hover:shadow-teal-400/30 flex items-center justify-center gap-2"
+              onClick={() => {
+                if (currentUser && currentUser.role === 'citizen') {
+                  setActiveTab('citizen-dashboard');
+                } else {
+                  openLoginModal('citizen');
+                }
+              }}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-teal-500/20 hover:shadow-teal-400/30 flex items-center justify-center gap-2"
             >
-              <span>Report an Issue Now</span>
+              <User className="w-4 h-4 text-slate-950" />
+              <span>Citizen Portal</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
-              onClick={() => setActiveTab('citizen-dashboard')}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/90 text-white font-semibold text-sm border border-slate-700 transition-all flex items-center justify-center gap-2"
+              onClick={() => {
+                if (currentUser && currentUser.role === 'administrator') {
+                  setActiveTab('admin-dashboard');
+                } else {
+                  openLoginModal('administrator');
+                }
+              }}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-sm border border-amber-400/40 transition-all flex items-center justify-center gap-2 shadow-md"
             >
-              <span>Explore Civic Dashboard</span>
-              <BarChart3 className="w-4 h-4 text-teal-400" />
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span>Admin Portal (Command)</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('live-map')}
-              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-medium text-sm border border-white/10 transition-all flex items-center justify-center gap-2"
+              onClick={() => setActiveTab('report-issue')}
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm border border-white/20 transition-all flex items-center justify-center gap-2"
             >
-              <MapPin className="w-4 h-4 text-teal-400" />
-              <span>Live Civic Map</span>
+              <span>+ Report an Issue</span>
             </button>
           </div>
 

@@ -25,7 +25,7 @@ export const CivicKarmaView: React.FC = () => {
   const [speaking, setSpeaking] = useState(false);
 
   // Filter complaints by current user
-  const userComplaints = complaints.filter((c) => c.reporterId === currentUser.id);
+  const userComplaints = complaints.filter((c) => c.reporterId === currentUser?.id);
   const resolvedCount = userComplaints.filter((c) => c.status === 'resolved').length;
   
   // Calculate user karma score
@@ -34,7 +34,7 @@ export const CivicKarmaView: React.FC = () => {
     userComplaints.length * 50 +
     resolvedCount * 75 +
     userComplaints.filter((c) => c.imageUrl).length * 25 +
-    (currentUser.role === 'administrator' ? 240 : 0)
+    (currentUser?.role === 'administrator' ? 240 : 0)
   );
 
   const karmaLevel = karmaScore > 600 ? 'Level 5 • Master Civic Guardian' : karmaScore > 400 ? 'Level 4 • Civic Guardian' : 'Level 3 • Active Sentinel';
@@ -81,7 +81,7 @@ export const CivicKarmaView: React.FC = () => {
   const leaderboard = [
     { rank: 1, name: 'Elena Rostova', ward: 'Ward 4 - Downtown', points: 940, reports: 18, badge: 'Civic Legend' },
     { rank: 2, name: 'Marcus Chen', ward: 'Ward 2 - Riverside', points: 790, reports: 15, badge: 'Master Spotter' },
-    { rank: 3, name: currentUser.name, ward: 'Ward 7 - Westside', points: karmaScore, reports: userComplaints.length, badge: 'Civic Guardian', isCurrentUser: true },
+    { rank: 3, name: currentUser?.name || 'Resident Citizen', ward: 'Ward 7 - Westside', points: karmaScore, reports: userComplaints.length, badge: 'Civic Guardian', isCurrentUser: true },
     { rank: 4, name: 'Devon Vance', ward: 'Ward 3 - East Hills', points: 420, reports: 8, badge: 'Sentinel' },
     { rank: 5, name: 'Sarah Al-Mansoor', ward: 'Ward 5 - Metro Hub', points: 360, reports: 7, badge: 'Sentinel' },
   ];
@@ -94,7 +94,7 @@ export const CivicKarmaView: React.FC = () => {
       setSpeaking(false);
       return;
     }
-    const text = `CivicFix Intelligence Impact Briefing. Citizen ${currentUser.name} has achieved ${karmaScore} Karma Points at ${karmaLevel}. Through your prompt reports, an estimated 48 thousand liters of clean water have been conserved, and 14 pedestrian safety hazards have been permanently mitigated. Your next municipal parking credit is unlocked.`;
+    const text = `CivicFix Intelligence Impact Briefing. Citizen ${currentUser?.name || 'Resident'} has achieved ${karmaScore} Karma Points at ${karmaLevel}. Through your prompt reports, an estimated 48 thousand liters of clean water have been conserved, and 14 pedestrian safety hazards have been permanently mitigated. Your next municipal parking credit is unlocked.`;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
@@ -155,12 +155,12 @@ export const CivicKarmaView: React.FC = () => {
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
+                src={currentUser?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150'}
+                alt={currentUser?.name || 'User'}
                 className="w-12 h-12 rounded-xl object-cover ring-2 ring-teal-500/40 shadow-xs"
               />
               <div>
-                <h3 className="font-extrabold text-slate-900 text-base">{currentUser.name}</h3>
+                <h3 className="font-extrabold text-slate-900 text-base">{currentUser?.name || 'Resident Citizen'}</h3>
                 <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
                   {karmaLevel}
                 </span>

@@ -34,6 +34,7 @@ export const ComplaintDetailsPage: React.FC = () => {
     setActiveTab,
     viewComplaint,
     updateComplaintStatus,
+    markComplaintResolved,
     addCitizenNote,
     resolveDuplicate,
   } = useCivic();
@@ -110,17 +111,17 @@ export const ComplaintDetailsPage: React.FC = () => {
       {/* Top back button and header */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => setActiveTab(currentUser.role === 'administrator' ? 'admin-dashboard' : 'citizen-dashboard')}
+          onClick={() => setActiveTab(currentUser?.role === 'administrator' ? 'admin-dashboard' : 'citizen-dashboard')}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to {currentUser.role === 'administrator' ? 'Operations' : 'My Dashboard'}</span>
+          <span>Back to {currentUser?.role === 'administrator' ? 'Operations' : 'My Dashboard'}</span>
         </button>
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400">Viewing as:</span>
           <span className="text-xs font-bold text-slate-800 capitalize bg-slate-100 px-2 py-0.5 rounded">
-            {currentUser.name} ({currentUser.role})
+            {currentUser?.name || 'Visitor'} ({currentUser?.role || 'Guest'})
           </span>
         </div>
       </div>
@@ -294,14 +295,32 @@ export const ComplaintDetailsPage: React.FC = () => {
       </div>
 
       {/* Administrator Action Bar (Visible when in Administrator Role) */}
-      {currentUser.role === 'administrator' && (
+      {currentUser?.role === 'administrator' && (
         <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-md space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-teal-400" />
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
               <h3 className="text-sm font-bold text-white">Municipal Dispatcher Controls</h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {complaint.status !== 'resolved' && complaint.status !== 'closed' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    markComplaintResolved(
+                      complaint.id,
+                      adminNote || 'Field repairs completed and officially verified by municipal authority.'
+                    );
+                    setAdminNote('');
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition-all shadow-md"
+                  title="Mark this civic problem as solved"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Mark Issue as Solved & Completed</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setDispatchModalOpen(true)}
@@ -310,8 +329,8 @@ export const ComplaintDetailsPage: React.FC = () => {
                 <Truck className="w-3.5 h-3.5" />
                 <span>Simulate Field Crew Dispatch</span>
               </button>
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                Authorized Staff
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                Admin Clearance
               </span>
             </div>
           </div>
@@ -419,7 +438,7 @@ export const ComplaintDetailsPage: React.FC = () => {
                       Inspect Case
                     </button>
 
-                    {currentUser.role === 'administrator' && dup.reviewStatus === 'pending' && (
+                    {currentUser?.role === 'administrator' && dup.reviewStatus === 'pending' && (
                       <button
                         onClick={() => resolveDuplicate(dup.id, 'confirm_merge')}
                         className="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-600 text-white hover:bg-purple-700"

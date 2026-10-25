@@ -36,6 +36,7 @@ export const AdminDashboard: React.FC = () => {
     currentUser,
     viewComplaint,
     updateComplaintStatus,
+    markComplaintResolved,
     resolveDuplicate,
     setActiveTab,
   } = useCivic();
@@ -62,6 +63,20 @@ export const AdminDashboard: React.FC = () => {
   const [quickPriority, setQuickPriority] = useState<ComplaintPriority>('medium');
   const [quickNote, setQuickNote] = useState('');
   const [dispatchTicket, setDispatchTicket] = useState<Complaint | null>(null);
+
+  // Direct Resolution Modal for Admin marking ticket completed
+  const [resolveModalTicket, setResolveModalTicket] = useState<Complaint | null>(null);
+  const [resolveNote, setResolveNote] = useState('Field repair completed and verified on site by municipal inspection crew.');
+
+  const handleConfirmResolve = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resolveModalTicket) return;
+    markComplaintResolved(
+      resolveModalTicket.id,
+      resolveNote.trim() || 'Work verified and officially marked completed by Municipal Authority.'
+    );
+    setResolveModalTicket(null);
+  };
 
   // Calculations
   const total = complaints.length;
@@ -163,7 +178,7 @@ export const AdminDashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Logged in as <strong className="text-slate-800">{currentUser.name}</strong> ({currentUser.department || 'Operations Team'}).
+            Logged in as <strong className="text-slate-800">{currentUser?.name || 'Administrator'}</strong> ({currentUser?.department || 'Operations Team'}).
           </p>
         </div>
 
@@ -401,6 +416,25 @@ export const AdminDashboard: React.FC = () => {
                         <StatusBadge status={item.status} size="sm" />
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap space-x-1.5">
+                        {item.status !== 'resolved' && item.status !== 'closed' ? (
+                          <button
+                            onClick={() => {
+                              setResolveModalTicket(item);
+                              setResolveNote('Field repair completed and verified by municipal inspection crew.');
+                            }}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-2xs inline-flex items-center gap-1"
+                            title="Mark this civic problem as Completed / Solved"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                            <span>Mark Solved</span>
+                          </button>
+                        ) : (
+                          <span className="px-2 py-0.5 text-[11px] font-bold text-emerald-800 bg-emerald-100 rounded-lg border border-emerald-300 inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Solved</span>
+                          </span>
+                        )}
+
                         <button
                           onClick={() => setDispatchTicket(item)}
                           className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-teal-500 text-slate-950 hover:bg-teal-400 transition-colors shadow-2xs inline-flex items-center gap-1"
@@ -839,6 +873,73 @@ export const AdminDashboard: React.FC = () => {
         isOpen={Boolean(dispatchTicket)}
         onClose={() => setDispatchTicket(null)}
       />
+
+      {/* Official Municipal Resolution Modal */}
+      {resolveModalTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-sm">Mark Problem Solved & Verified</h3>
+                  <span className="font-mono text-[10px] text-teal-700 font-bold">{resolveModalTicket.id}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setResolveModalTicket(null)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs space-y-1">
+              <div className="font-bold text-slate-900">{resolveModalTicket.title}</div>
+              <div className="text-[11px] text-slate-500">{resolveModalTicket.address}</div>
+            </div>
+
+            <form onSubmit={handleConfirmResolve} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                  Official Municipal Completion Note
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={resolveNote}
+                  onChange={(e) => setResolveNote(e.target.value)}
+                  placeholder="Describe repair actions, contractor units involved, or verification inspection..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] leading-relaxed">
+                ✓ Once confirmed, this ticket's status is permanently updated to <strong>Resolved</strong> on the public ledger with your official officer audit timestamp.
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setResolveModalTicket(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>Confirm Issue Solved</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

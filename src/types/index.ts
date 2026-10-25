@@ -94,6 +94,9 @@ export interface UserProfile {
   role: 'citizen' | 'administrator';
   avatar?: string;
   department?: string;
+  phone?: string;
+  neighborhood?: string;
+  bio?: string;
 }
 
 export interface CivicInsights {

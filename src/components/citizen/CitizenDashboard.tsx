@@ -33,7 +33,7 @@ export const CitizenDashboard: React.FC = () => {
   const filteredComplaints = useMemo(() => {
     return complaints.filter((c) => {
       // Scope filter: my complaints vs all complaints
-      if (viewScope === 'mine' && c.reporterId !== currentUser.id) {
+      if (viewScope === 'mine' && c.reporterId !== currentUser?.id) {
         return false;
       }
 
@@ -61,10 +61,10 @@ export const CitizenDashboard: React.FC = () => {
 
       return true;
     });
-  }, [complaints, currentUser.id, viewScope, selectedCategory, selectedStatus, searchQuery]);
+  }, [complaints, currentUser?.id, viewScope, selectedCategory, selectedStatus, searchQuery]);
 
   // User personal counters
-  const myComplaints = complaints.filter((c) => c.reporterId === currentUser.id);
+  const myComplaints = complaints.filter((c) => c.reporterId === currentUser?.id);
   const totalReports = myComplaints.length;
   const openReports = myComplaints.filter((c) => c.status === 'reported' || c.status === 'triaged').length;
   const inProgressReports = myComplaints.filter((c) => c.status === 'in_progress' || c.status === 'scheduled').length;
@@ -82,7 +82,7 @@ export const CitizenDashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Logged in as <strong className="text-slate-800">{currentUser.name}</strong> ({currentUser.email}). Track and monitor civic issue resolutions.
+            Logged in as <strong className="text-slate-800">{currentUser?.name || 'Resident Citizen'}</strong> ({currentUser?.email || 'citizen@civicnet.org'}). Track and monitor civic issue resolutions.
           </p>
         </div>
 
